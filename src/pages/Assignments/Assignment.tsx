@@ -1,6 +1,6 @@
 import { Button, Col, Container, Row } from "react-bootstrap";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { type CSSProperties, type FC, type ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { IAssignmentResponse } from "../../utils/interfaces";
 import { RootState } from "../../store/store";
@@ -11,6 +11,8 @@ import useAPI from "../../hooks/useAPI";
 import { assignmentColumns } from "./AssignmentColumns";
 import AssignmentDelete from "./AssignmentDelete";
 import { BsPlusSquareFill } from "react-icons/bs";
+import ImportModal from "../../components/Modals/ImportModal";
+import ExportModal from "../../components/Modals/ExportModal";
 
 const Assignments = () => {
   const { error, isLoading, data: assignmentResponse, sendRequest: fetchAssignments } = useAPI();
@@ -26,6 +28,37 @@ const Assignments = () => {
     visible: boolean;
     data?: IAssignmentResponse;
   }>({ visible: false });
+  const [showImportAssignmentModal, setShowImportAssignmentModal] = useState(false);
+  const [showExportAssignmentModal, setShowExportAssignmentModal] = useState(false);
+
+  const STANDARD_TEXT: CSSProperties = {
+    fontFamily: "verdana, arial, helvetica, sans-serif",
+    color: "#333",
+    fontSize: "13px",
+    lineHeight: "30px",
+  };
+
+  const toolbarLinkBase: CSSProperties = {
+    ...STANDARD_TEXT,
+    color: "#8b5e3c",
+    background: "transparent",
+    border: "none",
+    padding: 0,
+    margin: 0,
+    cursor: "pointer",
+    textDecoration: "none",
+  };
+
+  const pipe: CSSProperties = { margin: "0 8px", color: "#8b5e3c" };
+
+  const ToolbarLink: FC<{
+    onClick: () => void;
+    children: ReactNode;
+  }> = ({ onClick, children }) => (
+    <button style={toolbarLinkBase} onClick={onClick}>
+      {children}
+    </button>
+  );
 
   useEffect(() => {
     if (!showDeleteConfirmation.visible) {
@@ -43,6 +76,11 @@ const Assignments = () => {
     () => setShowDeleteConfirmation({ visible: false }),
     []
   );
+
+  const handleHideImportModal = useCallback(() => {
+    fetchAssignments({ url: `/assignments` });
+    setShowImportAssignmentModal(false);
+  }, [fetchAssignments]);
 
   const onEditHandle = useCallback(
     (row: TRow<IAssignmentResponse>) => navigate(`edit/${row.original.id}`),
@@ -81,6 +119,17 @@ const Assignments = () => {
             </Col>
             <hr />
           </Row>
+          <Row>
+            <Col>
+              <ToolbarLink onClick={() => setShowImportAssignmentModal(true)}>
+                Import assignments
+              </ToolbarLink>
+              <span style={pipe}>|</span>
+              <ToolbarLink onClick={() => setShowExportAssignmentModal(true)}>
+                Export assignments
+              </ToolbarLink>
+            </Col>
+          </Row>
           <Row className="mb-3">
             <Col md={{ span: 1, offset: 11 }}>
               <Button variant="outline-success" onClick={() => navigate("new")}>
@@ -106,6 +155,16 @@ const Assignments = () => {
           </Row>
         </Container>
       </main>
+      <ImportModal
+        show={showImportAssignmentModal}
+        onHide={handleHideImportModal}
+        modelClass="Assignment"
+      />
+      <ExportModal
+        show={showExportAssignmentModal}
+        onHide={() => setShowExportAssignmentModal(false)}
+        modelClass="Assignment"
+      />
     </>
   );
 };
